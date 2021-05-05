@@ -4,7 +4,6 @@
 # --------------------------------------------------------------------------------------------
 
 from azure.cli.core import AzCommandsLoader
-
 from azext_logicapp._help import helps  # pylint: disable=unused-import
 
 
@@ -12,15 +11,13 @@ class LogicappCommandsLoader(AzCommandsLoader):
 
     def __init__(self, cli_ctx=None):
         from azure.cli.core.commands import CliCommandType
-        from azext_logicapp._client_factory import applicationinsights_data_plane_client
-        applicationinsights_custom = CliCommandType(
-            operations_tmpl='azext_logicapp.custom#{}',
-            client_factory=applicationinsights_data_plane_client
-        )
-
+        from azure.cli.core.profiles import ResourceType
+        logicapp_custom = CliCommandType(
+            operations_tmpl='azext_logicapp.custom#{}')
         super(LogicappCommandsLoader, self).__init__(
             cli_ctx=cli_ctx,
-            custom_command_type=applicationinsights_custom
+            custom_command_type=logicapp_custom,
+            resource_type=ResourceType.MGMT_APPSERVICE
         )
 
     def load_command_table(self, args):
