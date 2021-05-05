@@ -8,7 +8,7 @@ from azure.cli.core import AzCommandsLoader
 from azext_logicapp._help import helps  # pylint: disable=unused-import
 
 
-class ApplicationInsightsCommandsLoader(AzCommandsLoader):
+class LogicappCommandsLoader(AzCommandsLoader):
 
     def __init__(self, cli_ctx=None):
         from azure.cli.core.commands import CliCommandType
@@ -18,7 +18,7 @@ class ApplicationInsightsCommandsLoader(AzCommandsLoader):
             client_factory=applicationinsights_data_plane_client
         )
 
-        super(ApplicationInsightsCommandsLoader, self).__init__(
+        super(LogicappCommandsLoader, self).__init__(
             cli_ctx=cli_ctx,
             custom_command_type=applicationinsights_custom
         )
@@ -33,4 +33,4 @@ class ApplicationInsightsCommandsLoader(AzCommandsLoader):
         load_arguments(self, command)
 
 
-COMMAND_LOADER_CLS = ApplicationInsightsCommandsLoader
+COMMAND_LOADER_CLS = LogicappCommandsLoader
