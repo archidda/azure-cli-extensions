@@ -54,21 +54,17 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None,
                     deployment_container_image_name=None, tags=None, assign_identities=None,
                     role='Contributor', scope=None):
     # pylint: disable=too-many-statements, too-many-branches
-    if functions_version is None:
-        logger.warning("No functions version specified so defaulting to 2. In the future, specifying a version will "
-                       "be required. To create a 2.x function you would pass in the flag `--functions-version 2`")
-        functions_version = '2'
+    # if functions_version is None:
+    #     logger.warning("No functions version specified so defaulting to 2. In the future, specifying a version will "
+    #                    "be required. To create a 2.x function you would pass in the flag `--functions-version 2`")
+    functions_version = '3'
     if deployment_source_url and deployment_local_git:
         raise CLIError('usage error: --deployment-source-url <url> | --deployment-local-git')
     if bool(plan) == bool(consumption_plan_location):
         raise CLIError("usage error: --plan NAME_OR_ID | --consumption-plan-location LOCATION")
-    print('after consumption plan location')
-    print(vars(cmd))
     SiteConfig, Site, NameValuePair = cmd.get_models('SiteConfig', 'Site', 'NameValuePair')
-    print('after siteconfig, site, namevalue pair')
     docker_registry_server_url = parse_docker_image_name(deployment_container_image_name)
     disable_app_insights = (disable_app_insights == "true")
-    print('after disable app insights')
     site_config = SiteConfig(app_settings=[])
     functionapp_def = Site(location=None, site_config=site_config, tags=tags)
     KEYS = FUNCTIONS_STACKS_API_KEYS()
@@ -76,17 +72,15 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None,
     plan_info = None
     if runtime is not None:
         runtime = runtime.lower()
-    print('after runtime')
     if consumption_plan_location:
         locations = list_consumption_locations(cmd)
         location = next((loc for loc in locations if loc['name'].lower() == consumption_plan_location.lower()), None)
         if location is None:
             raise CLIError("Location is invalid. Use: az logicapp list-consumption-locations")
         functionapp_def.location = consumption_plan_location
-        functionapp_def.kind = 'functionapp, workflowapp'
+        functionapp_def.kind = 'functionapp,workflowapp'
         # if os_type is None, the os type is windows
         is_linux = os_type and os_type.lower() == 'linux'
-        print('end of  consumption plan location')
     else:  # apps with SKU based plan
         if is_valid_resource_id(plan):
             parse_result = parse_resource_id(plan)
@@ -99,7 +93,6 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None,
         is_linux = plan_info.reserved
         functionapp_def.server_farm_id = plan
         functionapp_def.location = location
-    print('after if else else consumption plan location')
     if functions_version == '2' and functionapp_def.location in FUNCTIONS_NO_V2_REGIONS:
         raise CLIError("2.x functions are not supported in this region. To create a 3.x function, "
                        "pass in the flag '--functions-version 3'")
@@ -188,7 +181,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None,
                 site_config.app_settings.append(NameValuePair(name='WEBSITES_ENABLE_APP_SERVICE_STORAGE',
                                                               value='true'))
     else:
-        functionapp_def.kind = 'functionapp, workflowapp'
+        functionapp_def.kind = 'functionapp,workflowapp'
 
     # set site configs
     for prop, value in site_config_json.items():
