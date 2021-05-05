@@ -34,14 +34,14 @@ with open('HISTORY.rst', 'r', encoding='utf-8') as f:
     HISTORY = f.read()
 
 setup(
-    name='application-insights',
+    name='logicapp',
     version=VERSION,
-    description='Support for managing Application Insights components and querying metrics, events, and logs from such components.',
+    description='Support for managing logicapp on appservice.',
     long_description=README + '\n\n' + HISTORY,
     license='MIT',
-    author='Ace Eldeib',
-    author_email='aleldeib@microsoft.com',
-    url='https://github.com/Azure/azure-cli-extensions/tree/master/src/application-insights',
+    author='Arjun Chiddarwar',
+    author_email='archidda@microsoft.com',
+    url='https://github.com/Azure/azure-cli-extensions/tree/master/src/logicapp',
     classifiers=CLASSIFIERS,
     packages=find_packages(exclude=["tests"]),
     package_data={'azext_logicapp': ['azext_metadata.json']},
