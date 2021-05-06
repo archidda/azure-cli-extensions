@@ -29,7 +29,6 @@ def validate_app_service(namespace):
 
 
 def validate_set_params(namespace):
-    print(namespace.ordered_arguments[0])
     (set, nameValuePairs) = namespace.ordered_arguments[0]
     for index, i in enumerate(nameValuePairs):
         parameterName, parameterValue = i.split('=')[0], i.split('=')[1]
@@ -39,9 +38,6 @@ def validate_set_params(namespace):
         nameValuePairs[index] = SCALE_VALID_PARAMS[parameterName] + \
             '=' + parameterValue
     namespace.ordered_arguments[0] = (set, nameValuePairs)
-    print(namespace.ordered_arguments[0])
-
-    # raise CLIError('stopper')
 
 
 def validate_applications(namespace):
