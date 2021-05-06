@@ -37,6 +37,12 @@ FUNCTIONS_NO_V2_REGIONS = {
     "USSec West",
     "USSec East"
 }
+SCALE_VALID_PARAMS = {
+    "runtimeScaleMonitoringEnabled": "siteConfig.functionsRuntimeScaleMonitoringEnabled",
+    "logicAppScaleLimit": "siteConfig.functionAppScaleLimit",
+    "minimumElasticInstanceCount": "siteConfig.minimumElasticInstanceCount",
+    "preWarmedInstanceCount": "siteConfig.preWarmedInstanceCount"
+}
 
 
 class FUNCTIONS_STACKS_API_KEYS():
