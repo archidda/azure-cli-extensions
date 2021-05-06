@@ -40,8 +40,7 @@ FUNCTIONS_NO_V2_REGIONS = {
 SCALE_VALID_PARAMS = {
     "runtimeScaleMonitoringEnabled": "siteConfig.functionsRuntimeScaleMonitoringEnabled",
     "logicAppScaleLimit": "siteConfig.functionAppScaleLimit",
-    "minimumElasticInstanceCount": "siteConfig.minimumElasticInstanceCount",
-    "preWarmedInstanceCount": "siteConfig.preWarmedInstanceCount"
+    "minimumElasticInstanceCount": "siteConfig.minimumElasticInstanceCount"
 }
 
 
