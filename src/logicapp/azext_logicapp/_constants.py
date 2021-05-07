@@ -4,6 +4,8 @@
 # --------------------------------------------------------------------------------------------
 import os
 
+KUBE_APP_KIND = "linux,kubernetes,app"
+
 NODE_VERSION_DEFAULT = "10.14"
 NODE_VERSION_NEWER = "12-lts"
 NODE_EXACT_VERSION_DEFAULT = "10.14.1"
