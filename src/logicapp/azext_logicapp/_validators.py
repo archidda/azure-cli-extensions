@@ -28,16 +28,23 @@ def validate_app_service(namespace):
             namespace.app_service)['name']
 
 
-def validate_set_params(namespace):
+def rebrand_validate_update_params(namespace):
     (set, nameValuePairs) = namespace.ordered_arguments[0]
-    for index, i in enumerate(nameValuePairs):
-        parameterName, parameterValue = i.split('=')[0], i.split('=')[1]
-        if parameterName not in SCALE_VALID_PARAMS.keys():
-            raise CLIError('The parameter \'{0}\' is not supported with \'logicapp scale\' command. Supported parameters are {1}'.format(
-                parameterName, SCALE_VALID_PARAMS.keys()))
-        nameValuePairs[index] = SCALE_VALID_PARAMS[parameterName] + \
-            '=' + parameterValue
+    params = {}
+    for index, item in enumerate(nameValuePairs):
+        parameterName, parameterValue = item.split('=')[0], item.split('=')[1]
+        params[parameterName] = parameterValue
+        if parameterName in SCALE_VALID_PARAMS:
+            nameValuePairs[index] = SCALE_VALID_PARAMS[parameterName] + \
+                '=' + parameterValue
     namespace.ordered_arguments[0] = (set, nameValuePairs)
+
+    # 'minimumElasticInstanceCount' should not be more than 'logicAppScaleLimit'
+    if 'minimumElasticInstanceCount' in params and 'logicAppScaleLimit' in params and \
+            params['minimumElasticInstanceCount'] > params['logicAppScaleLimit']:
+        raise CLIError('The parameter \'minimumElasticInstanceCount\' has an invalid value. Details: The desired \
+minimumElasticInstanceCount ({0}) for the logicapp \'{1}\' must be less than or equal to the site\'s configured \
+logicappScaleLimit ({2}).'.format(params['minimumElasticInstanceCount'], namespace.name, params['logicAppScaleLimit']))
 
 
 def validate_applications(namespace):

@@ -16,10 +16,6 @@ def load_arguments(self, _):
     with self.argument_context('logicapp update') as c:
         c.argument('name', options_list=['--name', '-n'], help='Name of the logicapp to update.')
 
-    with self.argument_context('logicapp scale') as c:
-        c.argument('name', options_list=['--name', '-n'], help='Name of the logicapp to update.')
-        # c.argument('properties_to_set', options_list=['--set'], help='Set config values to update.', metavar='KEY=VALUE', arg_type= set_arg_type)
-
     with self.argument_context('monitor app-insights component update-tags') as c:
         c.argument('tags', tags_type)
 

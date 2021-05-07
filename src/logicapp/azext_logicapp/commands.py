@@ -13,9 +13,10 @@ from azure.cli.command_modules.appservice.commands import (
     update_function_ex_handler_factory
 )
 
-from ._validators import validate_onedeploy_params, validate_set_params
+from ._validators import validate_onedeploy_params, rebrand_validate_update_params
 
 from ._client_factory import cf_webapps
+
 
 def load_command_table(self, _):
 
@@ -38,10 +39,9 @@ def load_command_table(self, _):
         # g.custom_show_command('identity show', 'show_identity')
         # g.custom_command('identity remove', 'remove_identity')
         g.custom_command('deploy', 'perform_onedeploy', validator=validate_onedeploy_params, is_preview=True)
-        g.generic_update_command('scale', setter_name='set_functionapp', exception_handler=update_function_ex_handler_factory(),
-                                  custom_func_name='update_functionapp', setter_type=appservice_custom, command_type=webapp_sdk, validator=validate_set_params)
-        g.generic_update_command('update', setter_name='set_functionapp', exception_handler=update_function_ex_handler_factory(),
-                                  custom_func_name='update_functionapp', setter_type=appservice_custom, command_type=webapp_sdk)
+        g.generic_update_command('update', setter_name='set_functionapp', exception_handler=update_function_ex_handler_factory( ),
+                                  custom_func_name='update_functionapp', setter_type=appservice_custom, command_type=webapp_sdk,
+                                  validator=rebrand_validate_update_params)
 
     with self.command_group('logicapp deployment source') as g:
         # g.custom_command('config-local-git', 'enable_local_git')
