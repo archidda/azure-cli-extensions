@@ -17,7 +17,7 @@ from knack.log import get_logger
 from msrestazure.tools import is_valid_resource_id, parse_resource_id
 
 from azure.cli.core.commands import LongRunningOperation
-from azure.cli.core.util import get_az_user_agent, sdk_no_wait, get_json_object
+from azure.cli.core.util import get_az_user_agent, sdk_no_wait, get_json_object, shell_safe_json_parse
 
 from azure.cli.command_modules.appservice.custom import (
     start_webapp,
@@ -38,7 +38,6 @@ from azure.cli.command_modules.appservice.custom import (
     list_consumption_locations,
     _set_remote_or_local_git,
     try_create_application_insights,
-    update_app_settings,
     update_container_settings_functionapp,
     assign_identity,
     perform_onedeploy,
@@ -48,14 +47,15 @@ from azure.cli.command_modules.appservice.custom import (
     is_plan_consumption,
     upload_zip_to_storage,
     _get_site_credential,
-    get_app_settings,
     get_site_configs,
     _build_app_settings_output,
     _generic_settings_operation,
     validate_range_of_int_flag,
     validate_and_convert_to_int,
     _validate_app_service_environment_id,
-    _configure_default_logging)
+    _configure_default_logging,
+    update_app_settings,
+    get_app_settings)
 from azure.cli.command_modules.appservice.utils import retryable_method
 from azure.cli.core.azclierror import (ResourceNotFoundError, RequiredArgumentMissingError, ValidationError,
                                        ArgumentUsageError, MutuallyExclusiveArgumentError)
@@ -322,6 +322,60 @@ def show_webapp(cmd, resource_group_name, name, slot=None, app_instance=None):
         _fill_ftp_publishing_url(cmd, webapp, resource_group_name, name, slot)
 
     return webapp
+
+
+def update_app_settings2(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
+    print("in update app settings")
+    if not settings and not slot_settings:
+        raise CLIError('Usage Error: --settings |--slot-settings')
+
+    settings = settings or []
+    slot_settings = slot_settings or []
+
+    app_settings = _generic_site_operation(cmd.cli_ctx, resource_group_name, name,
+                                           'list_application_settings', slot)
+    print(settings)
+    result, slot_result = {}, {}
+    # pylint: disable=too-many-nested-blocks
+    for src, dest in [(settings, result), (slot_settings, slot_result)]:
+        print(src)
+        print(dest)
+        for s in src:
+            try:
+                temp = shell_safe_json_parse(s)
+                if isinstance(temp, list):  # a bit messy, but we'd like accept the output of the "list" command
+                    for t in temp:
+                        if t.get('slotSetting', True):
+                            slot_result[t['name']] = t['value']
+                            # Mark each setting as the slot setting
+                        else:
+                            result[t['name']] = t['value']
+                else:
+                    dest.update(temp)
+            except CLIError:
+                print(s)
+                setting_name, value = s.split('=', 1)
+                dest[setting_name] = value
+
+    result.update(slot_result)
+    for setting_name, value in result.items():
+        app_settings.properties[setting_name] = value
+    client = web_client_factory(cmd.cli_ctx)
+
+    result = _generic_settings_operation(cmd.cli_ctx, resource_group_name, name,
+                                         'update_application_settings',
+                                         app_settings.properties, slot, client)
+
+    app_settings_slot_cfg_names = []
+    if slot_result:
+        new_slot_setting_names = slot_result.keys()
+        slot_cfg_names = client.web_apps.list_slot_configuration_names(resource_group_name, name)
+        slot_cfg_names.app_setting_names = slot_cfg_names.app_setting_names or []
+        slot_cfg_names.app_setting_names += new_slot_setting_names
+        app_settings_slot_cfg_names = slot_cfg_names.app_setting_names
+        client.web_apps.update_slot_configuration_names(resource_group_name, name, slot_cfg_names)
+
+    return _build_app_settings_output(result.properties, app_settings_slot_cfg_names)
 
 
 def _fill_ftp_publishing_url(cmd, webapp, resource_group_name, name, slot=None):

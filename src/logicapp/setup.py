@@ -7,8 +7,13 @@
 
 from codecs import open
 from setuptools import setup, find_packages
+try:
+    from azure_bdist_wheel import cmdclass
+except ImportError:
+    from distutils import log as logger
+    logger.warn("Wheel is not available, disabling bdist_wheel hook")
 
-VERSION = "0.1.13"
+VERSION = "0.1.0"
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
@@ -24,9 +29,7 @@ CLASSIFIERS = [
     'License :: OSI Approved :: MIT License',
 ]
 
-DEPENDENCIES = [
-    "isodate~=0.6.0"
-]
+DEPENDENCIES = []
 
 with open('README.rst', 'r', encoding='utf-8') as f:
     README = f.read()
@@ -36,14 +39,14 @@ with open('HISTORY.rst', 'r', encoding='utf-8') as f:
 setup(
     name='logicapp',
     version=VERSION,
-    description='Support for managing logicapp on appservice.',
+    description='Microsoft Azure Command-Line Tools Logic Apps on Kubernetes Extension.',
     long_description=README + '\n\n' + HISTORY,
     license='MIT',
-    author='Arjun Chiddarwar',
-    author_email='archidda@microsoft.com',
+    author='Microsoft Corporation',
+    author_email='azpycli@microsoft.com',
     url='https://github.com/Azure/azure-cli-extensions/tree/master/src/logicapp',
     classifiers=CLASSIFIERS,
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(),
     package_data={'azext_logicapp': ['azext_metadata.json']},
     install_requires=DEPENDENCIES
 )
