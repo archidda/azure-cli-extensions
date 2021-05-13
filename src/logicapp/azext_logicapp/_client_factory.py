@@ -6,7 +6,7 @@
 from azure.cli.core.commands.client_factory import get_mgmt_service_client
 from azure.cli.core.profiles import ResourceType, CustomResourceType
 
-CUSTOM_MGMT_APPSERVICE = CustomResourceType('azext_appservice_kube.vendored_sdks.azure_mgmt_web',
+CUSTOM_MGMT_APPSERVICE = CustomResourceType('azext_logicapp.vendored_sdks.azure_mgmt_web',
                                             'WebSiteManagementClient')
 
 # pylint: disable=inconsistent-return-statements
