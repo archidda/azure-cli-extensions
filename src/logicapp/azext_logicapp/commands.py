@@ -26,10 +26,8 @@ def load_command_table(self, _):
         client_factory=cf_webapps
     )
 
-    with self.command_group('functionapp') as g:
-        # g.custom_command('create', 'create_logicapp', exception_handler=ex_handler_factory())
-        g.custom_command('banao', 'create_logicapp', exception_handler=ex_handler_factory())
-        # g.custom_command('list', 'list_function_app', table_transformer=transform_web_list_output)
+    with self.command_group('logicapp') as g:
+        g.custom_command('create', 'create_logicapp', exception_handler=ex_handler_factory())
         g.custom_show_command('show', 'show_webapp', table_transformer=transform_web_output)
         g.custom_command('delete', 'delete_function_app')
         g.custom_command('stop', 'stop_webapp')
@@ -45,10 +43,5 @@ def load_command_table(self, _):
                                   validator=rebrand_validate_update_params)
 
     with self.command_group('logicapp deployment source') as g:
-        # g.custom_command('config-local-git', 'enable_local_git')
         g.custom_command('config-zip', 'enable_zip_deploy_functionapp')
-        # g.custom_command('config', 'config_source_control', exception_handler=ex_handler_factory())
-        # g.custom_command('sync', 'sync_site_repo')
-        # g.custom_show_command('show', 'show_source_control')
-        # g.custom_command('delete', 'delete_source_control')
-        # g.custom_command('update-token', 'update_git_token', exception_handler=ex_handler_factory())
+        

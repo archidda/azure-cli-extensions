@@ -4,16 +4,16 @@
 # --------------------------------------------------------------------------------------------
 
 from azure.cli.core import AzCommandsLoader
+from azure.cli.core.profiles import register_resource_type
+
 from azext_logicapp._help import helps  # pylint: disable=unused-import
 from azext_logicapp._client_factory import CUSTOM_MGMT_APPSERVICE
-from azure.cli.core.profiles import register_resource_type
 
 
 class LogicappCommandsLoader(AzCommandsLoader):
 
     def __init__(self, cli_ctx=None):
         from azure.cli.core.commands import CliCommandType
-        from azure.cli.core.profiles import ResourceType
         register_resource_type('latest', CUSTOM_MGMT_APPSERVICE, '2020-12-01')
 
         logicapp_custom = CliCommandType(

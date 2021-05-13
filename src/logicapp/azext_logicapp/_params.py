@@ -4,14 +4,8 @@
 # --------------------------------------------------------------------------------------------
 
 # pylint: disable=line-too-long, too-many-statements
-from ._validators import validate_applications, validate_storage_account_name_or_id, validate_log_analytic_workspace_name_or_id, validate_app_service
-from azure.cli.command_modules.monitor.actions import get_period_type
 from knack.arguments import CLIArgumentType
-
-from azure.cli.core.commands.parameters import (get_datetime_type, tags_type, get_three_state_flag, get_enum_type,
-resource_group_name_type, get_location_type,
-get_resource_name_completion_list,
-get_three_state_flag, get_enum_type, tags_type)
+from azure.cli.core.commands.parameters import (tags_type, get_three_state_flag, get_resource_name_completion_list, get_enum_type)
 
 from ._constants import (FUNCTIONS_VERSIONS, FUNCTIONS_VERSION_TO_SUPPORTED_RUNTIME_VERSIONS,
                          LINUX_RUNTIMES, WINDOWS_RUNTIMES, OS_TYPES)
@@ -21,13 +15,6 @@ def load_arguments(self, _):
     # pylint: disable=line-too-long
     name_arg_type = CLIArgumentType(
         options_list=['--name', '-n'], metavar='NAME')
-    sku_arg_type = CLIArgumentType(help='The pricing tiers, e.g., F1(Free), D1(Shared), B1(Basic Small), B2(Basic Medium), B3(Basic Large), S1(Standard Small), P1V2(Premium V2 Small), PC2 (Premium Container Small), PC3 (Premium Container Medium), PC4 (Premium Container Large), I1 (Isolated Small), I2 (Isolated Medium), I3 (Isolated Large), Any, ElasticAny',
-                                   arg_type=get_enum_type(['F1', 'FREE', 'D1', 'SHARED', 'B1', 'B2', 'B3', 'S1', 'S2', 'S3', 'P1V2', 'P2V2', 'P3V2', 'PC2', 'PC3', 'PC4', 'I1', 'I2', 'I3', 'ANY', 'ELASTICANY']))
-    webapp_name_arg_type = CLIArgumentType(configured_default='web', options_list=['--name', '-n'], metavar='NAME',
-                                           completer=get_resource_name_completion_list('Microsoft.Web/sites'), id_part='name',
-                                           help="name of the web app. You can configure the default using `az configure --defaults web=<name>`")
-
-    K8SENetworkPlugin = self.get_models('K8SENetworkPlugin')
 
     # combine all runtime versions for all functions versions
     functionapp_runtime_to_version = {}
@@ -45,37 +32,35 @@ def load_arguments(self, _):
         functionapp_runtime_to_version_texts.append(
             runtime + ' -> [' + ', '.join(runtime_versions_list) + ']')
 
-    with self.argument_context('functionapp') as c:
+    with self.argument_context('logicapp') as c:
         c.ignore('app_instance')
         c.argument('name', arg_type=name_arg_type, id_part='name',
                    help='name of the function app')
         c.argument('slot', options_list=['--slot', '-s'],
                    help="the name of the slot. Default to the productions slot if not specified")
 
-    with self.argument_context('functionapp create') as c:
+    with self.argument_context('logicapp create') as c:
         c.argument('plan', options_list=['--plan', '-p'], configured_default='appserviceplan',
                    completer=get_resource_name_completion_list(
                        'Microsoft.Web/serverFarms'),
                    help="name or resource id of the function app service plan. Use 'appservice plan create' to get one")
-        c.argument('new_app_name', options_list=[
-                   '--name', '-n'], help='name of the new function app')
-        c.argument('custom_location', options_list=[
-                   '--custom-location'], help="Name or ID of the custom location")
+        c.argument('new_app_name', options_list=['--name', '-n'], help='name of the new logic app')
+        c.argument('custom_location', options_list=['--custom-location'], help="Name or ID of the custom location")
         c.argument('storage_account', options_list=['--storage-account', '-s'],
                    help='Provide a string value of a Storage Account in the provided Resource Group. Or Resource ID of a Storage Account in a different Resource Group')
         c.argument('consumption_plan_location', options_list=['--consumption-plan-location', '-c'],
-                   help="Geographic location where Function App will be hosted. Use `az functionapp list-consumption-locations` to view available locations.")
-        c.argument('functions_version', help='The functions app version.',
-                   arg_type=get_enum_type(FUNCTIONS_VERSIONS))
-        c.argument('runtime', help='The functions runtime stack.', arg_type=get_enum_type(
-            set(LINUX_RUNTIMES).union(set(WINDOWS_RUNTIMES))))
-        c.argument('runtime_version', help='The version of the functions runtime stack. '
-                                           'Allowed values for each --runtime are: ' + ', '.join(functionapp_runtime_to_version_texts))
+                   help="Geographic location where logic App will be hosted. Use `az logicapp list-consumption-locations` to view available locations.")
+        # c.argument('functions_version', help='The functions app version.',
+        #            arg_type=get_enum_type(FUNCTIONS_VERSIONS))
+        # c.argument('runtime', help='The runtime stack.', arg_type=get_enum_type(
+        #     set(LINUX_RUNTIMES).union(set(WINDOWS_RUNTIMES))))
+        # c.argument('runtime_version', help='The version of the functions runtime stack. '
+        #                                    'Allowed values for each --runtime are: ' + ', '.join(functionapp_runtime_to_version_texts))
         c.argument('os_type', arg_type=get_enum_type(OS_TYPES),
                    help="Set the OS type for the app to be created.")
         c.argument('app_insights_key',
                    help="Instrumentation key of App Insights to be added.")
-        c.argument('app_insights', help="Name of the existing App Insights project to be added to the Function app. Must be in the same resource group.")
+        c.argument('app_insights', help="Name of the existing App Insights project to be added to the Logic app. Must be in the same resource group.")
         c.argument('disable_app_insights', arg_type=get_three_state_flag(return_label=True),
                    help="Disable creating application insights resource during functionapp create. No logs will be available.")
         c.argument('docker_registry_server_user',
@@ -83,7 +68,7 @@ def load_arguments(self, _):
         c.argument('docker_registry_server_password',
                    help='The container registry server password. Required for private registries.')
 
-    for scope in ['webapp', 'functionapp']:
+    for scope in ['webapp', 'logicapp']:
         with self.argument_context(scope + ' create') as c:
             c.argument('deployment_container_image_name', options_list=[
                        '--deployment-container-image-name', '-i'], help='Linux only. Container image name from Docker Hub, e.g. publisher/image-name:tag')
@@ -102,64 +87,4 @@ def load_arguments(self, _):
             c.argument('tags', arg_type=tags_type)
 
     with self.argument_context('logicapp update') as c:
-        c.argument('name', options_list=[
-                   '--name', '-n'], help='Name of the logicapp to update.')
-
-    with self.argument_context('monitor app-insights component update-tags') as c:
-        c.argument('tags', tags_type)
-
-    with self.argument_context('monitor app-insights component connect-webapp') as c:
-        c.argument('app_service', options_list=[
-                   '--web-app'], help="Name or resource id of the web app.", validator=validate_app_service, id_part=None)
-        c.argument('enable_profiler', help='Enable collecting profiling traces that help you see where time is spent in code. Currently it is only supported for .NET/.NET Core Web Apps.', arg_type=get_three_state_flag())
-        c.argument('enable_snapshot_debugger', options_list=['--enable-snapshot-debugger', '--enable-debugger'],
-                   help='Enable snapshot debugger when an exception is thrown. Currently it is only supported for .NET/.NET Core Web Apps.', arg_type=get_three_state_flag())
-
-    with self.argument_context('monitor app-insights component connect-function') as c:
-        c.argument('app_service', options_list=[
-                   '--function'], help="Name or resource id of the Azure function.", validator=validate_app_service)
-
-    with self.argument_context('monitor app-insights component billing') as c:
-        c.argument('stop_sending_notification_when_hitting_cap', options_list=['-s', '--stop'], arg_type=get_three_state_flag(),
-                   help='Do not send a notification email when the daily data volume cap is met.')
-        c.argument('cap', type=float, help='Daily data volume cap in GB.')
-
-    with self.argument_context('monitor app-insights api-key create') as c:
-        c.argument('api_key', help='The name of the API key to create.')
-        c.argument('read_properties', nargs='+',
-                   options_list=['--read-properties'])
-        c.argument('write_properties', nargs='+')
-
-    with self.argument_context('monitor app-insights api-key show') as c:
-        c.argument('api_key', help='The name of the API key to fetch.')
-
-    with self.argument_context('monitor app-insights query') as c:
-        c.argument('application', validator=validate_applications, options_list=[
-                   '--apps', '-a'], nargs='+', id_part='name', help='GUID, app name, or fully-qualified Azure resource name of Application Insights component. The application GUID may be acquired from the API Access menu item on any Application Insights resource in the Azure portal. If using an application name, please specify resource group.')
-        c.argument('analytics_query',
-                   help='Query to execute over Application Insights data.')
-        c.argument('start_time', arg_type=get_datetime_type(
-            help='Start-time of time range for which to retrieve data.'))
-        c.argument('end_time', arg_type=get_datetime_type(
-            help='End of time range for current operation. Defaults to the current time.'))
-        c.argument('offset', help='Filter results based on UTC hour offset.',
-                   type=get_period_type(as_timedelta=True))
-
-    with self.argument_context('monitor app-insights component linked-storage') as c:
-        c.argument('storage_account_id', options_list=['--storage-account', '-s'], validator=validate_storage_account_name_or_id,
-                   help='Name or ID of a linked storage account.')
-
-    with self.argument_context('monitor app-insights component continues-export list') as c:
-        c.argument('application', id_part=None)
-
-    with self.argument_context('monitor app-insights component continues-export') as c:
-        c.argument('record_types', nargs='+',
-                   arg_type=get_enum_type(
-                       ['Requests', 'Event', 'Exceptions', 'Metrics', 'PageViews', 'PageViewPerformance', 'Rdd',
-                        'PerformanceCounters', 'Availability', 'Messages']),
-                   help='The document types to be exported, as comma separated values. Allowed values include \'Requests\', \'Event\', \'Exceptions\', \'Metrics\', \'PageViews\', \'PageViewPerformance\', \'Rdd\', \'PerformanceCounters\', \'Availability\', \'Messages\'.')
-
-    for scope in ['update', 'show', 'delete']:
-        with self.argument_context('monitor app-insights component continues-export {}'.format(scope)) as c:
-            c.argument('export_id', options_list=['--id'],
-                       help='The Continuous Export configuration ID. This is unique within a Application Insights component.')
+        c.argument('name', options_list=['--name', '-n'], help='Name of the logicapp to update.')
