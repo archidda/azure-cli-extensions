@@ -18,6 +18,8 @@ KUBE_APP_KIND = "linux,kubernetes,app"
 KUBE_CONTAINER_APP_KIND = 'linux,kubernetes,app,container'
 KUBE_FUNCTION_APP_KIND = 'functionapp,workflowapp,linux,kubernetes'
 KUBE_FUNCTION_CONTAINER_APP_KIND = 'linux,kubernetes,functionapp,workflowapp,container'
+KUBE_LOGIC_APP_KIND = 'functionapp,workflowapp,linux,kubernetes'
+KUBE_LOGIC_CONTAINER_APP_KIND = 'linux,kubernetes,functionapp,workflowapp,container'
 LINUX_RUNTIMES = ['dotnet', 'node', 'python', 'java']
 WINDOWS_RUNTIMES = ['dotnet', 'node', 'java', 'powershell']
 

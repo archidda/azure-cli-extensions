@@ -14,26 +14,19 @@ from azure.cli.command_modules.appservice.commands import (
     update_function_ex_handler_factory
 )
 
-from ._validators import validate_onedeploy_params, rebrand_validate_update_params
+from ._validators import validate_onedeploy_params
 
 from ._client_factory import cf_webapps
 
-
 def load_command_table(self, _):
-
     appservice_custom = CliCommandType(operations_tmpl='azure.cli.command_modules.appservice.custom#{}')
     webapp_sdk = CliCommandType(
         operations_tmpl='azure.mgmt.web.operations#WebAppsOperations.{}',
         client_factory=cf_webapps
     )
 
-    with self.command_group('functionapp config appsettings') as g:
-        g.custom_command('list', 'get_app_settings', exception_handler=empty_on_404)
-        g.custom_command('set', 'update_app_settings', exception_handler=ex_handler_factory())
-        g.custom_command('delete', 'delete_app_settings', exception_handler=ex_handler_factory())
-
-    with self.command_group('logicapp config container') as g:
-        g.custom_command('set', 'update_container_settings_functionapp')
+    # with self.command_group('logicapp config container') as g:
+    #     g.custom_command('set', 'update_container_settings_functionapp')
 
     with self.command_group('logicapp config appsettings') as g:
         g.custom_command('list', 'get_app_settings', exception_handler=empty_on_404)
@@ -47,6 +40,7 @@ def load_command_table(self, _):
         g.custom_command('stop', 'stop_webapp')
         g.custom_command('start', 'start_webapp')
         g.custom_command('restart', 'restart_webapp')
+        g.custom_command('scale', 'scale_webapp')
         g.custom_command('list-consumption-locations', 'list_consumption_locations')
         # g.custom_command('identity assign', 'assign_identity')
         # g.custom_show_command('identity show', 'show_identity')
