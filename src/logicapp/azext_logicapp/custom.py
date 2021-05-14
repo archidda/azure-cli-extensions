@@ -22,7 +22,6 @@ from azure.cli.core.util import get_az_user_agent, sdk_no_wait, get_json_object,
 from azure.cli.command_modules.appservice.custom import (
     start_webapp,
     stop_webapp,
-    restart_webapp,
     parse_docker_image_name,
     delete_function_app,
     _load_runtime_stacks_json_functionapp,
@@ -37,7 +36,7 @@ from azure.cli.command_modules.appservice.custom import (
     get_app_insights_key,
     list_consumption_locations,
     _set_remote_or_local_git,
-    try_create_application_insights,
+    # try_create_application_insights,
     update_container_settings_functionapp,
     assign_identity,
     perform_onedeploy,
@@ -54,7 +53,6 @@ from azure.cli.command_modules.appservice.custom import (
     validate_and_convert_to_int,
     _validate_app_service_environment_id,
     _configure_default_logging,
-    update_app_settings,
     get_app_settings)
 from azure.cli.command_modules.appservice.utils import retryable_method
 from azure.cli.core.azclierror import (ResourceNotFoundError, RequiredArgumentMissingError, ValidationError,
@@ -74,7 +72,7 @@ from ._constants import (KUBE_APP_KIND, KUBE_DEFAULT_SKU, KUBE_ASP_KIND,
                          DOTNET_RUNTIME_VERSION_TO_DOTNET_LINUX_FX_VERSION, FUNCTIONS_VERSION_TO_DEFAULT_NODE_VERSION)
 
 from ._client_factory import web_client_factory, cf_kube_environments, ex_handler_factory
-from ._util import _generic_site_operation
+from ._utils import _generic_site_operation
 
 logger = get_logger(__name__)
 
@@ -82,6 +80,11 @@ logger = get_logger(__name__)
 def scale_webapp(cmd, resource_group_name, name, number_of_workers, slot=None):
     return update_site_configs(cmd, resource_group_name, name,
                                number_of_workers=number_of_workers, slot=slot)
+
+
+def restart_webapp(cmd, resource_group_name, name, slot=None):
+    print("in restart app")
+    return _generic_site_operation(cmd.cli_ctx, resource_group_name, name, 'restart', slot)
 
 
 def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, custom_location=None,
@@ -203,6 +206,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
     if is_kube:
         functionapp_def.kind = KUBE_FUNCTION_APP_KIND
         functionapp_def.reserved = True
+        site_config.always_on = True
         site_config.app_settings.append(NameValuePair(name='WEBSITES_PORT', value='80'))
         # site_config.app_settings.append(NameValuePair(name='MACHINEKEY_DecryptionKey',
         #                                               value=str(hexlify(urandom(32)).decode()).upper()))
@@ -324,8 +328,40 @@ def show_webapp(cmd, resource_group_name, name, slot=None, app_instance=None):
     return webapp
 
 
-def update_app_settings2(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
-    print("in update app settings")
+def try_create_application_insights(cmd, functionapp):
+    creation_failed_warn = 'Unable to create the Application Insights for the Logic App. ' \
+                           'Please use the Azure Portal to manually create and configure the Application Insights, ' \
+                           'if needed.'
+
+    ai_resource_group_name = functionapp.resource_group
+    ai_name = functionapp.name
+    ai_location = functionapp.location
+
+    app_insights_client = get_mgmt_service_client(cmd.cli_ctx, ApplicationInsightsManagementClient)
+    ai_properties = {
+        "name": ai_name,
+        "location": ai_location,
+        "kind": "web",
+        "properties": {
+            "Application_Type": "web"
+        }
+    }
+    appinsights = app_insights_client.components.create_or_update(ai_resource_group_name, ai_name, ai_properties)
+    if appinsights is None or appinsights.instrumentation_key is None:
+        logger.warning(creation_failed_warn)
+        return
+
+    # We make this success message as a warning to no interfere with regular JSON output in stdout
+    logger.warning('Application Insights \"%s\" was created for this Logic App. '
+                   'You can visit https://portal.azure.com/#resource%s/overview to view your '
+                   'Application Insights component', appinsights.name, appinsights.id)
+
+    update_app_settings(cmd, functionapp.resource_group, functionapp.name,
+                        ['APPINSIGHTS_INSTRUMENTATIONKEY={}'.format(appinsights.instrumentation_key)])
+
+
+
+def update_app_settings(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
     if not settings and not slot_settings:
         raise CLIError('Usage Error: --settings |--slot-settings')
 
@@ -334,12 +370,11 @@ def update_app_settings2(cmd, resource_group_name, name, settings=None, slot=Non
 
     app_settings = _generic_site_operation(cmd.cli_ctx, resource_group_name, name,
                                            'list_application_settings', slot)
-    print(settings)
     result, slot_result = {}, {}
     # pylint: disable=too-many-nested-blocks
     for src, dest in [(settings, result), (slot_settings, slot_result)]:
-        print(src)
-        print(dest)
+        if type(src) is not list:
+            src = [src]
         for s in src:
             try:
                 temp = shell_safe_json_parse(s)
