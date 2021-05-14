@@ -32,6 +32,9 @@ def load_command_table(self, _):
         g.custom_command('set', 'update_app_settings', exception_handler=ex_handler_factory())
         g.custom_command('delete', 'delete_app_settings', exception_handler=ex_handler_factory())
 
+    with self.command_group('logicapp config container') as g:
+        g.custom_command('set', 'update_container_settings_functionapp')
+
     with self.command_group('logicapp config appsettings') as g:
         g.custom_command('list', 'get_app_settings', exception_handler=empty_on_404)
         g.custom_command('set', 'update_app_settings', exception_handler=ex_handler_factory())
@@ -54,4 +57,3 @@ def load_command_table(self, _):
 
     with self.command_group('logicapp deployment source') as g:
         g.custom_command('config-zip', 'enable_zip_deploy_functionapp')
-        

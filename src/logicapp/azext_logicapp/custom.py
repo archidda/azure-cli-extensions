@@ -36,7 +36,7 @@ from azure.cli.command_modules.appservice.custom import (
     get_app_insights_key,
     list_consumption_locations,
     _set_remote_or_local_git,
-    # try_create_application_insights,
+    try_create_application_insights,
     update_container_settings_functionapp,
     assign_identity,
     perform_onedeploy,
@@ -72,7 +72,6 @@ from ._constants import (KUBE_APP_KIND, KUBE_DEFAULT_SKU, KUBE_ASP_KIND,
                          DOTNET_RUNTIME_VERSION_TO_DOTNET_LINUX_FX_VERSION, FUNCTIONS_VERSION_TO_DEFAULT_NODE_VERSION)
 
 from ._client_factory import web_client_factory, cf_kube_environments, ex_handler_factory
-from ._utils import _generic_site_operation
 
 logger = get_logger(__name__)
 
@@ -296,7 +295,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
     else:
         _set_remote_or_local_git(cmd, functionapp, resource_group_name, name, deployment_source_url,
                                  deployment_source_branch, deployment_local_git)
-
+    create_app_insights = False
     if create_app_insights:
         try:
             try_create_application_insights(cmd, functionapp)
@@ -328,7 +327,7 @@ def show_webapp(cmd, resource_group_name, name, slot=None, app_instance=None):
     return webapp
 
 
-def try_create_application_insights(cmd, functionapp):
+def try_create_application_insights2(cmd, functionapp):
     creation_failed_warn = 'Unable to create the Application Insights for the Logic App. ' \
                            'Please use the Azure Portal to manually create and configure the Application Insights, ' \
                            'if needed.'
@@ -455,7 +454,7 @@ def enable_zip_deploy_functionapp(cmd, resource_group_name, name, src, build_rem
     client = web_client_factory(cmd.cli_ctx)
     app = client.web_apps.get(resource_group_name, name)
     if app is None:
-        raise CLIError('The function app \'{}\' was not found in resource group \'{}\'. '
+        raise CLIError('The logic app \'{}\' was not found in resource group \'{}\'. '
                        'Please make sure these values are correct.'.format(name, resource_group_name))
     parse_plan_id = parse_resource_id(app.server_farm_id)
     plan_info = None
