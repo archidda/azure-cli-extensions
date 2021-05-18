@@ -831,7 +831,6 @@ def show_webapp(cmd, resource_group_name, name, slot=None, app_instance=None):
 
 def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, custom_location=None,
                     os_type=None, disable_app_insights=None, deployment_source_url=None,
-                    # functions_version='3', runtime=None, runtime_version=None,
                     consumption_plan_location=None, app_insights=None, app_insights_key=None,                    
                     deployment_source_branch='master', deployment_local_git=None,
                     docker_registry_server_password=None, docker_registry_server_user=None,
@@ -932,17 +931,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
             site_config.app_settings.append(NameValuePair(
                 name='K8SE_APP_MAX_INSTANCE_COUNT', value=max_worker_count))
 
-    if is_linux and not runtime and (consumption_plan_location or not deployment_container_image_name):
-        raise CLIError(
-            "usage error: --runtime RUNTIME required for linux functions apps without custom image.")
-
     if runtime:
-        # if is_linux and runtime not in LINUX_RUNTIMES:
-        #     raise CLIError("usage error: Currently supported runtimes (--runtime) in linux logic apps are: {}."
-        #                    .format(', '.join(LINUX_RUNTIMES)))
-        # if not is_linux and runtime not in WINDOWS_RUNTIMES:
-        #     raise CLIError("usage error: Currently supported runtimes (--runtime) in windows logic apps are: {}."
-        #                    .format(', '.join(WINDOWS_RUNTIMES)))
         site_config.app_settings.append(NameValuePair(
             name='FUNCTIONS_WORKER_RUNTIME', value=runtime))
 
@@ -962,8 +951,8 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
         site_config.always_on = True
         logicapp_def.kind = KUBE_LOGIC_APP_KIND
         logicapp_def.reserved = True
-        # site_config.app_settings.append(
-        #     NameValuePair(name='WEBSITES_PORT', value='80'))
+        site_config.app_settings.append(
+            NameValuePair(name='WEBSITES_PORT', value='80'))
         # site_config.app_settings.append(NameValuePair(name='MACHINEKEY_DecryptionKey',
         #                                               value=str(hexlify(urandom(32)).decode()).upper()))
         if deployment_container_image_name:
@@ -1024,10 +1013,6 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
     site_config.app_settings.append(NameValuePair(
         name='AzureWebJobsStorage', value=con_string))
     site_config.app_settings.append(NameValuePair(name='AzureWebJobsDashboard', value=con_string))
-    # if runtime == 'node':
-    #     site_config.app_settings.append(NameValuePair(name='WEBSITE_NODE_DEFAULT_VERSION',
-    #                                     value=_get_website_node_version_functionapp(functions_version, runtime, runtime_version)))
-
     site_config.app_settings.append(NameValuePair(
         name='AzureFunctionsJobHost__extensionBundle__id', value="Microsoft.Azure.Functions.ExtensionBundle.Workflows"))
     site_config.app_settings.append(NameValuePair(
@@ -1418,7 +1403,7 @@ def update_container_settings(cmd, resource_group_name, name, docker_registry_se
 
 
 def try_create_application_insights(cmd, functionapp):
-    creation_failed_warn = 'Unable to create the Application Insights for the Function App. ' \
+    creation_failed_warn = 'Unable to create the Application Insights for the Logic App. ' \
                            'Please use the Azure Portal to manually create and configure the Application Insights, ' \
                            'if needed.'
 
@@ -1597,33 +1582,6 @@ def delete_app_settings(cmd, resource_group_name, name, setting_names, slot=None
   
     if is_slot_settings:
         client.web_apps.update_slot_configuration_names(resource_group_name, name, slot_cfg_names)
-
-    result = _generic_settings_operation(cmd.cli_ctx, resource_group_name, name,
-                                         'update_application_settings',
-                                         app_settings.properties, slot, client)
-
-    return _build_app_settings_output(result.properties, slot_cfg_names.app_setting_names)
-
-
-def delete_app_settings2(cmd, resource_group_name, name, setting_names, slot=None):
-    app_settings = _generic_site_operation(
-        cmd.cli_ctx, resource_group_name, name, 'list_application_settings', slot)
-    client = web_client_factory(cmd.cli_ctx)
-
-    slot_cfg_names = client.web_apps.list_slot_configuration_names(
-        resource_group_name, name)
-    is_slot_settings = False
-    if type(setting_names) is not list:
-        setting_names = [setting_names]
-    for setting_name in setting_names:
-        app_settings.properties.pop(setting_name, None)
-        if slot_cfg_names.app_setting_names and setting_name in slot_cfg_names.app_setting_names:
-            slot_cfg_names.app_setting_names.remove(setting_name)
-            is_slot_settings = True
-
-    if is_slot_settings:
-        client.web_apps.update_slot_configuration_names(
-            resource_group_name, name, slot_cfg_names)
 
     result = _generic_settings_operation(cmd.cli_ctx, resource_group_name, name,
                                          'update_application_settings',
