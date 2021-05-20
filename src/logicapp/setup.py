@@ -44,7 +44,7 @@ setup(
     license='MIT',
     author='Microsoft Corporation',
     author_email='azpycli@microsoft.com',
-    url='https://github.com/Azure/azure-cli-extensions/tree/master/src/logicapp',
+    url='https://github.com/Azure/azure-cli-extensions/',
     classifiers=CLASSIFIERS,
     packages=find_packages(),
     package_data={'azext_logicapp': ['azext_metadata.json']},
