@@ -42,7 +42,6 @@ from azure.cli.command_modules.appservice.custom import (
     validate_and_convert_to_int,
     validate_range_of_int_flag,
     get_app_settings,
-    # delete_app_settings,
     get_app_insights_key,
     _update_webapp_current_stack_property_if_needed,
     validate_container_app_create_options,
@@ -65,6 +64,7 @@ from azure.cli.command_modules.appservice.custom import (
     get_streaming_log,
     view_in_browser,
     update_app_settings,
+    delete_app_settings,
     _configure_default_logging)
 
 from azure.cli.command_modules.appservice.utils import retryable_method
@@ -1385,7 +1385,7 @@ def update_container_settings(cmd, resource_group_name, name, docker_registry_se
                         websites_enable_app_service_storage)
 
     if docker_registry_server_user or docker_registry_server_password or docker_registry_server_url or websites_enable_app_service_storage:  # pylint: disable=line-too-long
-        update_app_settings(cmd, resource_group_name, name, settings, slot)
+        update_app_settings_new(cmd, resource_group_name, name, settings, slot)
     settings = get_app_settings(cmd, resource_group_name, name, slot)
 
     if multicontainer_config_file and multicontainer_config_type:
@@ -1434,62 +1434,20 @@ def try_create_application_insights(cmd, functionapp):
                    'You can visit https://portal.azure.com/#resource%s/overview to view your '
                    'Application Insights component', appinsights.name, appinsights.id)
 
-    update_app_settings(cmd, functionapp.resource_group, functionapp.name,
+    update_app_settings_new(cmd, functionapp.resource_group, functionapp.name,
                         ['APPINSIGHTS_INSTRUMENTATIONKEY={}'.format(appinsights.instrumentation_key)])
 
-
-def update_app_settings2(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
-    if not settings and not slot_settings:
-        raise CLIError('Usage Error: --settings |--slot-settings')
-
+def update_app_settings_new(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
     settings = settings or []
     slot_settings = slot_settings or []
 
-    app_settings = _generic_site_operation(cmd.cli_ctx, resource_group_name, name,
-                                           'list_application_settings', slot)
-    result, slot_result = {}, {}
-    # pylint: disable=too-many-nested-blocks
-    for src, dest in [(settings, result), (slot_settings, slot_result)]:
-        if type(src) is not list:
-            src = [src]
-        for s in src:
-            try:
-                temp = shell_safe_json_parse(s)
-                # a bit messy, but we'd like accept the output of the "list" command
-                if isinstance(temp, list):
-                    for t in temp:
-                        if t.get('slotSetting', True):
-                            slot_result[t['name']] = t['value']
-                            # Mark each setting as the slot setting
-                        else:
-                            result[t['name']] = t['value']
-                else:
-                    dest.update(temp)
-            except CLIError:
-                setting_name, value = s.split('=', 1)
-                dest[setting_name] = value
+    if type(settings) is not list:
+        settings = [settings]
 
-    result.update(slot_result)
-    for setting_name, value in result.items():
-        app_settings.properties[setting_name] = value
-    client = web_client_factory(cmd.cli_ctx)
+    if type(slot_settings) is not list:
+        slot_settings = [slot_settings]
 
-    result = _generic_settings_operation(cmd.cli_ctx, resource_group_name, name,
-                                         'update_application_settings',
-                                         app_settings.properties, slot, client)
-
-    app_settings_slot_cfg_names = []
-    if slot_result:
-        new_slot_setting_names = slot_result.keys()
-        slot_cfg_names = client.web_apps.list_slot_configuration_names(
-            resource_group_name, name)
-        slot_cfg_names.app_setting_names = slot_cfg_names.app_setting_names or []
-        slot_cfg_names.app_setting_names += new_slot_setting_names
-        app_settings_slot_cfg_names = slot_cfg_names.app_setting_names
-        client.web_apps.update_slot_configuration_names(
-            resource_group_name, name, slot_cfg_names)
-
-    return _build_app_settings_output(result.properties, app_settings_slot_cfg_names)
+    return update_app_settings(cmd, resource_group_name, name, settings, slot, slot_settings)
 
 
 # for any modifications to the non-optional parameters, adjust the reflection logic accordingly
@@ -1513,10 +1471,10 @@ def update_site_configs(cmd, resource_group_name, name, slot=None, number_of_wor
             '--number-of-workers', number_of_workers, min_val=0, max_val=20)
     if linux_fx_version:
         if linux_fx_version.strip().lower().startswith('docker|'):
-            update_app_settings(cmd, resource_group_name, name, [
+            update_app_settings_new(cmd, resource_group_name, name, [
                                 "WEBSITES_ENABLE_APP_SERVICE_STORAGE=false"])
         else:
-            delete_app_settings(cmd, resource_group_name, name, [
+            delete_app_settings_new(cmd, resource_group_name, name, [
                                 "WEBSITES_ENABLE_APP_SERVICE_STORAGE"])
 
     if pre_warmed_instance_count is not None:
@@ -1566,29 +1524,12 @@ def update_site_configs(cmd, resource_group_name, name, slot=None, number_of_wor
 
     return _generic_site_operation(cmd.cli_ctx, resource_group_name, name, 'update_configuration', slot, configs)
 
-def delete_app_settings(cmd, resource_group_name, name, setting_names, slot=None):
-    app_settings = _generic_site_operation(cmd.cli_ctx, resource_group_name, name, 'list_application_settings', slot)
-    client = web_client_factory(cmd.cli_ctx)
-
-    slot_cfg_names = client.web_apps.list_slot_configuration_names(resource_group_name, name)
+def delete_app_settings_new(cmd, resource_group_name, name, setting_names, slot=None):
+    setting_names = setting_names or []
     if type(setting_names) is not list:
         setting_names = [setting_names]
 
-    is_slot_settings = False
-    for setting_name in setting_names:
-        app_settings.properties.pop(setting_name, None)
-        if slot_cfg_names.app_setting_names and setting_name in slot_cfg_names.app_setting_names:
-            slot_cfg_names.app_setting_names.remove(setting_name)
-            is_slot_settings = True
-  
-    if is_slot_settings:
-        client.web_apps.update_slot_configuration_names(resource_group_name, name, slot_cfg_names)
-
-    result = _generic_settings_operation(cmd.cli_ctx, resource_group_name, name,
-                                         'update_application_settings',
-                                         app_settings.properties, slot, client)
-
-    return _build_app_settings_output(result.properties, slot_cfg_names.app_setting_names)
+    return delete_app_settings(cmd, resource_group_name, name, setting_names, slot)
 
 
 def config_source_control(cmd, resource_group_name, name, repo_url, repository_type='git', branch=None,  # pylint: disable=too-many-locals
@@ -1822,7 +1763,7 @@ def remove_remote_build_app_settings(cmd, resource_group_name, name, slot):
 
     if scm_do_build_during_deployment is not False:
         logger.warning("Setting SCM_DO_BUILD_DURING_DEPLOYMENT to false")
-        update_app_settings(cmd, resource_group_name, name, [
+        update_app_settings_new(cmd, resource_group_name, name, [
             "SCM_DO_BUILD_DURING_DEPLOYMENT=false"
         ], slot)
         app_settings_should_contain['SCM_DO_BUILD_DURING_DEPLOYMENT'] = 'false'
@@ -1865,21 +1806,21 @@ def add_remote_build_app_settings(cmd, resource_group_name, name, slot):
 
     if scm_do_build_during_deployment is not True:
         logger.warning("Setting SCM_DO_BUILD_DURING_DEPLOYMENT to true")
-        update_app_settings(cmd, resource_group_name, name, [
+        update_app_settings_new(cmd, resource_group_name, name, [
             "SCM_DO_BUILD_DURING_DEPLOYMENT=true"
         ], slot)
         app_settings_should_contain['SCM_DO_BUILD_DURING_DEPLOYMENT'] = 'true'
 
     if website_run_from_package:
         logger.warning("Removing WEBSITE_RUN_FROM_PACKAGE app setting")
-        delete_app_settings(cmd, resource_group_name, name, [
+        delete_app_settings_new(cmd, resource_group_name, name, [
             "WEBSITE_RUN_FROM_PACKAGE"
         ], slot)
         app_settings_should_not_have.append('WEBSITE_RUN_FROM_PACKAGE')
 
     if enable_oryx_build:
         logger.warning("Removing ENABLE_ORYX_BUILD app setting")
-        delete_app_settings(cmd, resource_group_name, name, [
+        delete_app_settings_new(cmd, resource_group_name, name, [
             "ENABLE_ORYX_BUILD"
         ], slot)
         app_settings_should_not_have.append('ENABLE_ORYX_BUILD')

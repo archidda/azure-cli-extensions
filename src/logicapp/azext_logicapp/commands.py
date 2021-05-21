@@ -30,8 +30,8 @@ def load_command_table(self, _):
 
     with self.command_group('logicapp config appsettings') as g:
         g.custom_command('list', 'get_app_settings', exception_handler=empty_on_404)
-        g.custom_command('set', 'update_app_settings', exception_handler=ex_handler_factory())
-        g.custom_command('delete', 'delete_app_settings', exception_handler=ex_handler_factory())
+        g.custom_command('set', 'update_app_settings_new', exception_handler=ex_handler_factory())
+        g.custom_command('delete', 'delete_app_settings_new', exception_handler=ex_handler_factory())
 
     with self.command_group('logicapp') as g:
         g.custom_command('create', 'create_logicapp', exception_handler=ex_handler_factory())
