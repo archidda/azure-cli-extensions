@@ -64,6 +64,7 @@ from azure.cli.command_modules.appservice.custom import (
     is_plan_consumption,
     get_streaming_log,
     view_in_browser,
+    update_app_settings,
     _configure_default_logging)
 
 from azure.cli.command_modules.appservice.utils import retryable_method
@@ -1437,7 +1438,7 @@ def try_create_application_insights(cmd, functionapp):
                         ['APPINSIGHTS_INSTRUMENTATIONKEY={}'.format(appinsights.instrumentation_key)])
 
 
-def update_app_settings(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
+def update_app_settings2(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
     if not settings and not slot_settings:
         raise CLIError('Usage Error: --settings |--slot-settings')
 
