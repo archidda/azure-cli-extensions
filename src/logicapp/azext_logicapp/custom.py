@@ -882,7 +882,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
         ) == consumption_plan_location.lower()), None)
         if location is None:
             raise CLIError(
-                "Location is invalid. Use: az functionapp list-consumption-locations")
+                "Location is invalid. Use: az logicapp list-consumption-locations")
         logicapp_def.location = consumption_plan_location
         logicapp_def.kind = 'functionapp,workflowapp'
         # if os_type is None, the os type is windows
@@ -1021,8 +1021,8 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
     site_config.app_settings.append(
         NameValuePair(name='APP_KIND', value="workflowApp"))
 
-    # If plan is not consumption or elastic premium, we need to set always on
-    if consumption_plan_location is None and not is_plan_elastic_premium(cmd, plan_info):
+    # If plan is not consumption or elastic premium or workflow standard, we need to set always on
+    if consumption_plan_location is None and not is_plan_elastic_premium(cmd, plan_info) and not is_plan_workflow_standard(cmd, plan_info):
         site_config.always_on = True
 
     # If plan is elastic premium or windows consumption, we need these app settings
@@ -1997,3 +1997,10 @@ def _fill_ftp_publishing_url(cmd, webapp, resource_group_name, name, slot=None):
         pass
 
     return webapp
+
+def is_plan_workflow_standard(cmd, plan_info):
+    SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
+    if isinstance(plan_info, AppServicePlan):
+        if isinstance(plan_info.sku, SkuDescription):
+            return plan_info.sku.tier == 'WorkflowStandard'
+    return False
