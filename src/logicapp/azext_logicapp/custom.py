@@ -9,14 +9,6 @@ import time
 from binascii import hexlify
 from os import urandom
 import json
-# import ssl
-# import sys
-# import platform
-# import subprocess
-# from subprocess import PIPE
-# import tempfile
-# import shutil
-# import os
 
 try:
     from urllib.parse import urlparse
@@ -99,7 +91,7 @@ from ._create_util import (zip_contents_from_dir, get_runtime_version_details, c
                            get_plan_to_use, get_kube_plan_to_use, get_lang_from_content, get_rg_to_use, get_sku_to_use,
                            detect_os_form_src, get_current_stack_from_runtime, generate_default_app_service_plan_name)
 from ._client_factory import web_client_factory, cf_kube_environments, ex_handler_factory
-from .vsts_cd_provider import VstsContinuousDeliveryProvider
+# from .vsts_cd_provider import VstsContinuousDeliveryProvider
 
 
 logger = get_logger(__name__)
@@ -1022,7 +1014,7 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
         NameValuePair(name='APP_KIND', value="workflowApp"))
 
     # If plan is not consumption or elastic premium or workflow standard, we need to set always on
-    if consumption_plan_location is None and not is_plan_elastic_premium(cmd, plan_info) and not is_plan_workflow_standard(cmd, plan_info):
+    if consumption_plan_location is None and not is_plan_elastic_premium(cmd, plan_info) and not is_plan_workflow_standard(cmd, plan_info) and not is_plan_ASEV3(cmd, plan_info):
         site_config.always_on = True
 
     # If plan is elastic premium or windows consumption, we need these app settings
@@ -1533,44 +1525,10 @@ def delete_app_settings_new(cmd, resource_group_name, name, setting_names, slot=
 
 
 def config_source_control(cmd, resource_group_name, name, repo_url, repository_type='git', branch=None,  # pylint: disable=too-many-locals
-                          manual_integration=None, git_token=None, slot=None, cd_app_type=None,
-                          app_working_dir=None, nodejs_task_runner=None, python_framework=None,
-                          python_version=None, cd_account_create=None, cd_project_url=None, test=None,
-                          slot_swap=None, private_repo_username=None, private_repo_password=None):
+                          manual_integration=None, git_token=None, slot=None):
     client = web_client_factory(cmd.cli_ctx)
     location = _get_location_from_webapp(client, resource_group_name, name)
 
-    if cd_project_url:
-        # Add default values
-        cd_app_type = 'AspNet' if cd_app_type is None else cd_app_type
-        python_framework = 'Django' if python_framework is None else python_framework
-        python_version = 'Python 3.5.3 x86' if python_version is None else python_version
-
-        webapp_list = None if test is None else list_webapp(
-            resource_group_name)
-        vsts_provider = VstsContinuousDeliveryProvider()
-        cd_app_type_details = {
-            'cd_app_type': cd_app_type,
-            'app_working_dir': app_working_dir,
-            'nodejs_task_runner': nodejs_task_runner,
-            'python_framework': python_framework,
-            'python_version': python_version
-        }
-        try:
-            status = vsts_provider.setup_continuous_delivery(cmd.cli_ctx, resource_group_name, name, repo_url,
-                                                             branch, git_token, slot_swap, cd_app_type_details,
-                                                             cd_project_url, cd_account_create, location, test,
-                                                             private_repo_username, private_repo_password, webapp_list)
-        except RuntimeError as ex:
-            raise CLIError(ex)
-        logger.warning(status.status_message)
-        return status
-    non_vsts_params = [cd_app_type, app_working_dir, nodejs_task_runner, python_framework,
-                       python_version, cd_account_create, test, slot_swap]
-    if any(non_vsts_params):
-        raise CLIError('Following parameters are of no use when cd_project_url is None: ' +
-                       'cd_app_type, app_working_dir, nodejs_task_runner, python_framework,' +
-                       'python_version, cd_account_create, test, slot_swap')
     from azure.mgmt.web.models import SiteSourceControl, SourceControl
     if git_token:
         sc = SourceControl(location=location,
@@ -2000,6 +1958,14 @@ def _fill_ftp_publishing_url(cmd, webapp, resource_group_name, name, slot=None):
 
 def is_plan_workflow_standard(cmd, plan_info):
     SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
+    if isinstance(plan_info, AppServicePlan):
+        if isinstance(plan_info.sku, SkuDescription):
+            return plan_info.sku.tier == 'WorkflowStandard'
+    return False
+
+def is_plan_ASEV3(cmd, plan_info):
+    SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
+    print(plan_info)
     if isinstance(plan_info, AppServicePlan):
         if isinstance(plan_info.sku, SkuDescription):
             return plan_info.sku.tier == 'WorkflowStandard'
