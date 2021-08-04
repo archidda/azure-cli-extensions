@@ -1013,6 +1013,11 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
     site_config.app_settings.append(
         NameValuePair(name='APP_KIND', value="workflowApp"))
 
+    if is_plan_ASEV3(cmd, plan_info):
+        print ('adding  WEBSITE_VNET_ROUTE_ALL: 1 in app settings')
+        site_config.app_settings.append(
+            NameValuePair(name='WEBSITE_VNET_ROUTE_ALL', value="1"))
+
     # If plan is not consumption or elastic premium or workflow standard, we need to set always on
     if consumption_plan_location is None and not is_plan_elastic_premium(cmd, plan_info) and not is_plan_workflow_standard(cmd, plan_info) and not is_plan_ASEV3(cmd, plan_info):
         site_config.always_on = True
@@ -1965,8 +1970,8 @@ def is_plan_workflow_standard(cmd, plan_info):
 
 def is_plan_ASEV3(cmd, plan_info):
     SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
-    print(plan_info)
+    print(plan_info.sku)
     if isinstance(plan_info, AppServicePlan):
         if isinstance(plan_info.sku, SkuDescription):
-            return plan_info.sku.tier == 'WorkflowStandard'
+            return plan_info.sku.tier == 'IsolatedV2'
     return False
