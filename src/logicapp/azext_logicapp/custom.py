@@ -1970,7 +1970,6 @@ def is_plan_workflow_standard(cmd, plan_info):
 
 def is_plan_ASEV3(cmd, plan_info):
     SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
-    print(plan_info.sku)
     if isinstance(plan_info, AppServicePlan):
         if isinstance(plan_info.sku, SkuDescription):
             return plan_info.sku.tier == 'IsolatedV2'
