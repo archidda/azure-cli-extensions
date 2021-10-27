@@ -20,6 +20,8 @@ except ImportError:
 from knack.util import CLIError
 from knack.log import get_logger
 
+from azure.cli.command_modules.extension.custom import (remove_extension_cmd, add_extension_cmd)
+
 from azure.cli.command_modules.appservice.custom import (
     list_webapp,
     _rename_server_farm_props,
@@ -151,7 +153,6 @@ def create_kube_environment(cmd, client, name, resource_group_name, custom_locat
         except Exception as err:
             raise e
     raise ValidationError(msg)
-
 
 def list_kube_environments(client, resource_group_name=None):
     if resource_group_name is None:
@@ -609,9 +610,9 @@ def create_webapp(cmd, resource_group_name, name, plan=None, runtime=None, custo
     return webapp
 
 def scale_webapp(cmd, resource_group_name, name, instance_count, slot=None):
+    notify_if_upgrade_available()
     return update_site_configs(cmd, resource_group_name, name,
                                number_of_workers=instance_count, slot=slot)
-
 
 def show_webapp(cmd, resource_group_name, name, slot=None, app_instance=None):
     webapp = app_instance
@@ -637,6 +638,9 @@ def create_logicapp(cmd, resource_group_name, name, storage_account, plan=None, 
                     deployment_container_image_name=None, tags=None,
                     min_worker_count=None, max_worker_count=None):
     # pylint: disable=too-many-statements, too-many-branches
+
+    notify_if_upgrade_available()
+
     SkuDescription = cmd.get_models('SkuDescription')
     functions_version='3'
     runtime = None
@@ -1527,6 +1531,7 @@ def add_remote_build_app_settings(cmd, resource_group_name, name, slot):
 
 
 def enable_zip_deploy_functionapp(cmd, resource_group_name, name, src, build_remote=False, timeout=None, slot=None):
+    notify_if_upgrade_available()
     client = web_client_factory(cmd.cli_ctx)
     app = client.web_apps.get(resource_group_name, name)
     if app is None:
@@ -1670,14 +1675,12 @@ def _fill_ftp_publishing_url(cmd, webapp, resource_group_name, name, slot=None):
 
     return webapp
 
-
 def is_plan_workflow_standard(cmd, plan_info):
     SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
     if isinstance(plan_info, AppServicePlan):
         if isinstance(plan_info.sku, SkuDescription):
             return plan_info.sku.tier == 'WorkflowStandard'
     return False
-
 
 def is_plan_ASEV3(cmd, plan_info):
     SkuDescription, AppServicePlan = cmd.get_models('SkuDescription', 'AppServicePlan')
@@ -1686,6 +1689,13 @@ def is_plan_ASEV3(cmd, plan_info):
             return plan_info.sku.tier == 'IsolatedV2'
     return False
 
+def get_app_settings_new(cmd, resource_group_name, name, slot=None):
+    notify_if_upgrade_available()
+    return get_app_settings(cmd, resource_group_name, name, slot)
+
+def delete_logicapp_app_settings(cmd, resource_group_name, name, setting_names, slot=None):
+    notify_if_upgrade_available()
+    return delete_app_settings_new(cmd, resource_group_name, name, setting_names, slot)
 
 def delete_app_settings_new(cmd, resource_group_name, name, setting_names, slot=None):
     setting_names = setting_names or []
@@ -1694,6 +1704,9 @@ def delete_app_settings_new(cmd, resource_group_name, name, setting_names, slot=
 
     return delete_app_settings(cmd, resource_group_name, name, setting_names, slot)
 
+def update_logicapp_app_settings(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
+    notify_if_upgrade_available()
+    return update_app_settings_new(cmd, resource_group_name, name, settings, slot, slot_settings)
 
 def update_app_settings_new(cmd, resource_group_name, name, settings=None, slot=None, slot_settings=None):
     settings = settings or []
@@ -1706,3 +1719,61 @@ def update_app_settings_new(cmd, resource_group_name, name, settings=None, slot=
         slot_settings = [slot_settings]
 
     return update_app_settings(cmd, resource_group_name, name, settings, slot, slot_settings)
+
+def start_logicapp(cmd, resource_group_name, name, slot=None):
+    notify_if_upgrade_available()
+    return start_webapp(cmd, resource_group_name, name, slot=None)
+
+def stop_logicapp(cmd, resource_group_name, name, slot=None):
+    notify_if_upgrade_available()
+    return stop_webapp(cmd, resource_group_name, name, slot=None)
+
+def restart_logicapp(cmd, resource_group_name, name, slot=None):
+    notify_if_upgrade_available()
+    return restart_webapp(cmd, resource_group_name, name, slot=None)
+
+def delete_logicapp(cmd, resource_group_name, name, slot=None):
+    notify_if_upgrade_available()
+    return delete_function_app(cmd, resource_group_name, name, slot=None)
+
+def show_logicapp(cmd, resource_group_name, name, slot=None, app_instance=None):
+    notify_if_upgrade_available()
+    return show_webapp(cmd, resource_group_name, name, slot, app_instance)
+
+def list_consumption_locations_logicapp(cmd):
+    notify_if_upgrade_available()
+    return list_consumption_locations(cmd)
+
+def is_new_version_available():
+    import requests
+    import os, json
+    from packaging import version
+
+    current_version = json.loads(os.popen('az version').read())['extensions']['logicapp']
+    logger.debug('Current version is {}'.format(current_version))
+    extension_source = 'https://aka.ms/logicapp-latest-py2.py3-none-any.whl'
+    redirectedUrl = requests.get(extension_source).url
+    latest_version = redirectedUrl.split("/")[-1].split("-")[1]
+    logger.debug('Latest version is {}'.format(latest_version))
+
+    if isinstance(version.parse(current_version), version.Version) and isinstance(version.parse(latest_version), version.Version):
+        if version.parse(current_version) < version.parse(latest_version):
+            return latest_version
+    else:
+        logger.error('Something went wrong. Current version found is \'{}\' and latest version found is \'{}\'.'.format(current_version, latest_version))
+    return False
+
+def notify_if_upgrade_available():
+    new_version = is_new_version_available()
+    if new_version:
+        logger.warning('New version \'{}\' is available. Run `az logicapp upgrade` to get to it. Please note that this upgrade command is temporarily available while the extension is in preview mode. Later, you can use `az upgrade` to upgrade the extension.'.format(new_version))
+
+def upgrade_logicapp(cmd):
+    latest_version = is_new_version_available()
+    if latest_version:
+        remove_extension_cmd('logicapp')
+        extension_source = 'https://aka.ms/logicapp-latest-py2.py3-none-any.whl'
+        add_extension_cmd(cmd, extension_source)
+        logger.warning('The logicapp extension is now upgraded to version \'{}\''.format(latest_version))
+    else:
+        logger.warning('The latest version for the logicapp extension is already installed.'.format(latest_version))

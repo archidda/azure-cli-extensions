@@ -27,19 +27,20 @@ def load_command_table(self, _):
 
 
     with self.command_group('logicapp config appsettings') as g:
-        g.custom_command('list', 'get_app_settings', exception_handler=empty_on_404)
-        g.custom_command('set', 'update_app_settings_new', exception_handler=ex_handler_factory())
-        g.custom_command('delete', 'delete_app_settings_new', exception_handler=ex_handler_factory())
+        g.custom_command('list', 'get_app_settings_new', exception_handler=empty_on_404)
+        g.custom_command('set', 'update_logicapp_app_settings', exception_handler=ex_handler_factory())
+        g.custom_command('delete', 'delete_logicapp_app_settings', exception_handler=ex_handler_factory())
 
     with self.command_group('logicapp') as g:
         g.custom_command('create', 'create_logicapp', exception_handler=ex_handler_factory())
-        g.custom_show_command('show', 'show_webapp', table_transformer=transform_web_output)
-        g.custom_command('delete', 'delete_function_app')
-        g.custom_command('stop', 'stop_webapp')
-        g.custom_command('start', 'start_webapp')
-        g.custom_command('restart', 'restart_webapp')
+        g.custom_show_command('show', 'show_logicapp', table_transformer=transform_web_output)
+        g.custom_command('delete', 'delete_logicapp')
+        g.custom_command('stop', 'stop_logicapp')
+        g.custom_command('start', 'start_logicapp')
+        g.custom_command('restart', 'restart_logicapp')
         g.custom_command('scale', 'scale_webapp')
-        g.custom_command('list-consumption-locations', 'list_consumption_locations')
+        g.custom_command('list-consumption-locations', 'list_consumption_locations_logicapp')
+        g.custom_command('upgrade', 'upgrade_logicapp')
 
     with self.command_group('logicapp deployment source') as g:
         g.custom_command('config-zip', 'enable_zip_deploy_functionapp')
