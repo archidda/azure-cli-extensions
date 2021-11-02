@@ -12143,7 +12143,39 @@
                     "version": "0.1.1"
                 },
                 "sha256Digest": "8ab0e4671f8a0436125b7fc353036032c0a613c3738ea6f2faa097da470bfd30"
-            }            
+            },
+            {
+                "downloadUrl": "https://azlogicappcliextension.blob.core.windows.net/logicappcliextension/logicapp-0.1.2-py2.py3-none-any.whl",
+                "filename": "logicapp-0.1.2-py2.py3-none-any.whl",
+                "metadata": {
+                    "azext.isPreview": true,
+                    "azext.minCliCoreVersion": "2.0.79",
+                    "extensions": {
+                        "python.details": {
+                            "contacts": [
+                                {
+                                    "email": "azpycli@microsoft.com",
+                                    "name": "Microsoft Corporation",
+                                    "role": "author"
+                                }
+                            ],
+                            "document_names": {
+                                "description": "DESCRIPTION.rst"
+                            },
+                            "project_urls": {
+                                "Home": "https://github.com/Azure/azure-cli-extensions/"
+                            }
+                        }
+                    },
+                    "generator": "bdist_wheel (0.30.0)",
+                    "license": "MIT",
+                    "metadata_version": "2.0",
+                    "name": "logicapp",
+                    "summary": "Microsoft Azure Command-Line Tools Logic Apps on Kubernetes Extension.",
+                    "version": "0.1.2"
+                },
+                "sha256Digest": "157adcb43fb88789d47c1c3d2a3e7951a6e418cd14f0115e0ed51392fe4a0ba1"
+            }
         ],
         "maintenance": [
             {
