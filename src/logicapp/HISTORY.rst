@@ -3,6 +3,10 @@
 Release History
 ===============
 
+0.1.3
+++++++
+* `az logicapp config appsettings set`: fix bug preventing setting multiple settings at the same time
+
 0.1.2
 ++++++
 * Fixes bugs related to not finding kube environment associated to the custom location."
