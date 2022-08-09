@@ -88,3 +88,6 @@ def load_arguments(self, _):
 
     with self.argument_context('logicapp update') as c:
         c.argument('name', options_list=['--name', '-n'], help='Name of the logicapp to update.')
+
+    with self.argument_context('logicapp config appsettings set') as c:
+        c.argument('settings', nargs='+', help="space-separated {} in a format of `<name>=<value>`".format(scope))
